@@ -2,8 +2,9 @@ import userModel from '../Models/userModel';
 const { v4 } = require('uuid')
 const bcrypt = require('bcryptjs')
 const Joi = require('joi')
+const URL = process.env.PASSWORDRESETURL;
 
-const addUser = async (event,context) => {
+const addUser = async (event, context) => {
   const { userName, email, password } = JSON.parse(event.body);
 
   const userSchema = Joi.object({
@@ -18,7 +19,7 @@ const addUser = async (event,context) => {
       headers: {
         'Access-Control-Allow-Origin': URL,
         'Access-Control-Allow-Credentials': true,
-    },
+      },
       statusCode: 400,
       body: JSON.stringify({ msg: results.error }),
     };
@@ -35,6 +36,57 @@ const addUser = async (event,context) => {
     password: hashedPassword,
     createdAt
   }
-  return await userModel.addUser(user);
+  try {
+    let userold;
+    const olduser = await userModel.isoldUser(user.email);
+    userold = olduser.Items[0]
+    console.log(userold);
+    if (!userold) {
+      try {
+        await userModel.addUser(user);
+        return {
+          headers: {
+              'Access-Control-Allow-Origin': URL,
+              'Access-Control-Allow-Credentials': true,
+          },
+          statusCode: 200,
+          body: JSON.stringify(user),
+      };
+      } catch (error) {
+        console.log(error);
+        return {
+            headers: {
+                'Access-Control-Allow-Origin': URL,
+                'Access-Control-Allow-Credentials': true,
+            },
+            statusCode: 400,
+            body: JSON.stringify({ msg: error }),
+        };
+    }
+    } else {
+      return {
+        headers: {
+          'Access-Control-Allow-Origin': URL,
+          'Access-Control-Allow-Credentials': true,
+        },
+        statusCode: 400,
+        body: JSON.stringify({
+          msg: "user already exists"
+        }),
+      };
+    }
+  } catch (error) {
+    console.log(error);
+    return {
+      headers: {
+        'Access-Control-Allow-Origin': URL,
+        'Access-Control-Allow-Credentials': true,
+      },
+      statusCode: 400,
+      body: JSON.stringify({
+        msg: "user found failed"
+      }),
+    };
+  }
 };
 export default addUser;
