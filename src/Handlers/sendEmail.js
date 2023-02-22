@@ -1,5 +1,6 @@
 import userModel from '../Models/userModel';
-const nodemailer = require('nodemailer');
+import Notification from '../Notification/sendEmail';
+// const nodemailer = require('nodemailer');
 const URL = process.env.PASSWORDRESETURL;
 
 const sendEmail = async (event) => {
@@ -32,20 +33,15 @@ const sendEmail = async (event) => {
                 }),
             };
         } else {
-            const transporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: {
-                    user: 'dealzsuperproject@gmail.com',
-                    pass: 'rwsnwviflkvrpkfi'
-                }
-            });
-            return transporter.sendMail({
-                from: 'dealzsuperproject@gmail.com',
+
+            const data={
                 to: user.email,
                 subject: 'Password Reset',
                 text: `It seems like you forgot your password ${user.userName}. \nIf this is true, click the link below to reset your password.\nReset my password [ ${URL}/updatePassword/${user.id} ]\n\n\nIf you did not forget your password, please disregard this email.`
-            }).then(results => {
-                console.log("Success", results);
+            }
+
+            try {
+                await Notification.sendEmail(data);
                 return {
                     headers: {
                         'Access-Control-Allow-Origin': URL,
@@ -54,8 +50,7 @@ const sendEmail = async (event) => {
                     statusCode: 200,
                     body: JSON.stringify("Email Sent successfully"),
                 };
-            }).catch(error => {
-                console.log(error);
+            } catch (error) {
                 return {
                     headers: {
                         'Access-Control-Allow-Origin': URL,
@@ -64,7 +59,7 @@ const sendEmail = async (event) => {
                     statusCode: 400,
                     body: JSON.stringify("Email Sent Unsuccessful"),
                 };
-            })
+            }
 
         }
     } catch (error) {
